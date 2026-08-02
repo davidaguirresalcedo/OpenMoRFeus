@@ -13,6 +13,7 @@ from .exceptions import (
     OpenMoRFeusError,
     UnexpectedResponseError,
     UnsupportedValueError,
+    VerificationError,
 )
 from .protocol import (
     BinaryResponse,
@@ -25,6 +26,13 @@ from .protocol import (
     build_report,
     decode_response,
 )
+from .writable import (
+    MAX_FREQUENCY_HZ,
+    MAX_MIXER_CURRENT,
+    MIN_FREQUENCY_HZ,
+    MIN_MIXER_CURRENT,
+    WritableMoRFeusDevice,
+)
 
 __all__ = [
     "BinaryResponse",
@@ -34,6 +42,10 @@ __all__ = [
     "DeviceState",
     "Function",
     "LcdTimeout",
+    "MAX_FREQUENCY_HZ",
+    "MAX_MIXER_CURRENT",
+    "MIN_FREQUENCY_HZ",
+    "MIN_MIXER_CURRENT",
     "MoRFeusDevice",
     "Opcode",
     "OpenMoRFeusError",
@@ -44,6 +56,8 @@ __all__ = [
     "TextResponse",
     "UnexpectedResponseError",
     "UnsupportedValueError",
+    "VerificationError",
+    "WritableMoRFeusDevice",
     "build_report",
     "decode_response",
 ]

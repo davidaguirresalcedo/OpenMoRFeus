@@ -1,0 +1,267 @@
+"""Explicitly writable moRFeus driver with read-back verification."""
+
+import time
+from numbers import Real
+
+from .device import (
+    HidTransport,
+    LcdTimeout,
+    MoRFeusDevice,
+    OperatingMode,
+    RESPONSE_SIZE,
+)
+from .exceptions import (
+    DeviceError,
+    DeviceResponseError,
+    UnexpectedResponseError,
+    VerificationError,
+)
+from .protocol import (
+    BinaryResponse,
+    Function,
+    Opcode,
+    TextResponse,
+    build_report,
+    decode_response,
+)
+
+
+MIN_FREQUENCY_HZ = 85_000_000
+MAX_FREQUENCY_HZ = 5_400_000_000
+MIN_MIXER_CURRENT = 0
+MAX_MIXER_CURRENT = 7
+
+
+class WritableMoRFeusDevice(MoRFeusDevice):
+    """moRFeus interface with explicit, validated SET operations.
+
+    Every public write is followed by a GET operation that verifies
+    the value returned by the physical device.
+
+    No public method is provided for selector 0x86 or selector 0x00.
+    """
+
+    def __init__(
+        self,
+        transport: HidTransport,
+        *,
+        verification_delay_s: float = 0.05,
+    ):
+        super().__init__(transport)
+
+        if verification_delay_s < 0:
+            raise ValueError(
+                "verification_delay_s cannot be negative"
+            )
+
+        self._verification_delay_s = verification_delay_s
+
+
+    def _write_value(
+        self,
+        function: Function,
+        value: int,
+    ) -> BinaryResponse:
+        """Transmit one SET command and consume its acknowledgement."""
+
+        self._ensure_open()
+
+        request = build_report(
+            Opcode.SET,
+            function,
+            value,
+        )
+
+        written = self._transport.write(list(request))
+
+        if written is not None and written != len(request):
+            raise DeviceError(
+                f"short HID write: expected {len(request)}, "
+                f"wrote {written}"
+            )
+
+        raw = self._transport.read(RESPONSE_SIZE)
+        response = decode_response(raw)
+
+        if isinstance(response, TextResponse):
+            raise DeviceResponseError(response.message)
+
+        if not isinstance(response, BinaryResponse):
+            raise UnexpectedResponseError(
+                "unexpected SET acknowledgement type"
+            )
+
+        if response.opcode != Opcode.SET:
+            raise UnexpectedResponseError(
+                f"expected SET acknowledgement opcode "
+                f"0x{Opcode.SET:02X}, "
+                f"received 0x{response.opcode:02X}"
+            )
+
+        if response.function != function:
+            raise UnexpectedResponseError(
+                f"expected SET acknowledgement for function "
+                f"0x{function:02X}, "
+                f"received 0x{response.function:02X}"
+            )
+
+        return response
+
+    def _set_and_verify(
+        self,
+        function: Function,
+        value: int,
+    ) -> int:
+        """Write a value, consume its acknowledgement, and read it back."""
+
+        self._write_value(function, value)
+
+        if self._verification_delay_s:
+            time.sleep(self._verification_delay_s)
+
+        actual = self._get_value(function)
+
+        if actual != value:
+            raise VerificationError(
+                f"verification failed for function "
+                f"0x{function:02X}: requested {value}, "
+                f"read back {actual}"
+            )
+
+        return actual
+
+    def set_frequency_hz(
+        self,
+        frequency_hz: int,
+    ) -> int:
+        """Set and verify the LO frequency in hertz."""
+
+        if isinstance(frequency_hz, bool) or not isinstance(
+            frequency_hz,
+            int,
+        ):
+            raise TypeError(
+                "frequency_hz must be an integer"
+            )
+
+        if not MIN_FREQUENCY_HZ <= frequency_hz <= MAX_FREQUENCY_HZ:
+            raise ValueError(
+                "frequency_hz must be between "
+                f"{MIN_FREQUENCY_HZ} and {MAX_FREQUENCY_HZ}"
+            )
+
+        return self._set_and_verify(
+            Function.FREQUENCY,
+            frequency_hz,
+        )
+
+    def set_frequency_mhz(
+        self,
+        frequency_mhz: Real,
+    ) -> float:
+        """Set and verify the LO frequency in megahertz."""
+
+        if isinstance(frequency_mhz, bool) or not isinstance(
+            frequency_mhz,
+            Real,
+        ):
+            raise TypeError(
+                "frequency_mhz must be a real number"
+            )
+
+        frequency_hz = round(
+            float(frequency_mhz) * 1_000_000
+        )
+
+        verified_hz = self.set_frequency_hz(frequency_hz)
+        return verified_hz / 1_000_000
+
+    def set_mode(
+        self,
+        mode: OperatingMode | int,
+    ) -> OperatingMode:
+        """Set and verify Mixer or Generator mode."""
+
+        if isinstance(mode, bool):
+            raise TypeError(
+                "mode must be an OperatingMode or integer"
+            )
+
+        try:
+            requested = OperatingMode(mode)
+        except ValueError as exc:
+            raise ValueError(
+                f"unsupported operating mode: {mode}"
+            ) from exc
+
+        actual = self._set_and_verify(
+            Function.MIXER_GENERATOR,
+            int(requested),
+        )
+
+        return OperatingMode(actual)
+
+    def set_mixer_current(
+        self,
+        current: int,
+    ) -> int:
+        """Set and verify mixer current from 0 through 7."""
+
+        if isinstance(current, bool) or not isinstance(current, int):
+            raise TypeError(
+                "current must be an integer"
+            )
+
+        if not MIN_MIXER_CURRENT <= current <= MAX_MIXER_CURRENT:
+            raise ValueError(
+                "current must be between "
+                f"{MIN_MIXER_CURRENT} and {MAX_MIXER_CURRENT}"
+            )
+
+        return self._set_and_verify(
+            Function.MIXER_CURRENT,
+            current,
+        )
+
+    def set_bias_tee(
+        self,
+        enabled: bool,
+    ) -> bool:
+        """Set and verify the Bias Tee state."""
+
+        if not isinstance(enabled, bool):
+            raise TypeError(
+                "enabled must be a boolean"
+            )
+
+        actual = self._set_and_verify(
+            Function.BIAS_TEE,
+            int(enabled),
+        )
+
+        return bool(actual)
+
+    def set_lcd_timeout(
+        self,
+        timeout: LcdTimeout | int,
+    ) -> LcdTimeout:
+        """Set and verify the LCD timeout."""
+
+        if isinstance(timeout, bool):
+            raise TypeError(
+                "timeout must be an LcdTimeout or integer"
+            )
+
+        try:
+            requested = LcdTimeout(timeout)
+        except ValueError as exc:
+            raise ValueError(
+                f"unsupported LCD timeout: {timeout}"
+            ) from exc
+
+        actual = self._set_and_verify(
+            Function.LCD_TIMEOUT,
+            int(requested),
+        )
+
+        return LcdTimeout(actual)

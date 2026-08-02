@@ -23,3 +23,8 @@ class UnexpectedResponseError(DeviceError):
 
 class UnsupportedValueError(DeviceError):
     """Raised when the device returns an undocumented value."""
+
+
+
+class VerificationError(DeviceError):
+    """Raised when read-back does not confirm a written value."""
