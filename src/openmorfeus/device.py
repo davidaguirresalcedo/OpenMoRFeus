@@ -1,8 +1,9 @@
 """Read-only device driver for the Outernet moRFeus."""
 
+import time
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Protocol, Sequence
+from typing import Any, Callable, Protocol, Sequence
 
 from .exceptions import (
     DeviceError,
@@ -35,8 +36,59 @@ class HidTransport(Protocol):
     def read(self, size: int) -> Sequence[int]:
         ...
 
+    def set_nonblocking(self, nonblocking: int) -> None:
+        ...
+
     def close(self) -> None:
         ...
+
+
+def _drain_pending_reports(
+    transport: HidTransport,
+    *,
+    response_size: int = RESPONSE_SIZE,
+    quiet_period_s: float = 0.20,
+    hard_timeout_s: float = 1.00,
+    poll_interval_s: float = 0.005,
+    clock: Callable[[], float] = time.monotonic,
+    sleeper: Callable[[float], None] = time.sleep,
+) -> int:
+    """Discard stale HID input reports before a new transaction."""
+
+    if quiet_period_s < 0:
+        raise ValueError("quiet_period_s cannot be negative")
+
+    if hard_timeout_s < 0:
+        raise ValueError("hard_timeout_s cannot be negative")
+
+    if poll_interval_s <= 0:
+        raise ValueError("poll_interval_s must be positive")
+
+    drained = 0
+    start = clock()
+    quiet_since = start
+
+    transport.set_nonblocking(1)
+
+    try:
+        while clock() - start < hard_timeout_s:
+            pending = transport.read(response_size)
+            now = clock()
+
+            if pending:
+                drained += 1
+                quiet_since = now
+                continue
+
+            if now - quiet_since >= quiet_period_s:
+                break
+
+            sleeper(poll_interval_s)
+
+    finally:
+        transport.set_nonblocking(0)
+
+    return drained
 
 
 class OperatingMode(IntEnum):
@@ -120,7 +172,7 @@ class MoRFeusDevice:
 
         try:
             transport.open_path(path)
-            transport.set_nonblocking(0)
+            _drain_pending_reports(transport)
         except Exception:
             transport.close()
             raise
