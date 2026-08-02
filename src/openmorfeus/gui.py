@@ -35,6 +35,7 @@ from .gui_controller import (
     apply_state,
     read_state,
 )
+from .sweep_gui import SweepDialog
 
 
 class WorkerSignals(QObject):
@@ -176,6 +177,14 @@ class MainWindow(QMainWindow):
         buttons = QHBoxLayout()
         buttons.addStretch()
 
+        self.sweep_button = QPushButton(
+            "Sweep generator…"
+        )
+        self.sweep_button.clicked.connect(
+            self.open_sweep_dialog
+        )
+        buttons.addWidget(self.sweep_button)
+
         self.apply_button = QPushButton(
             "Apply and verify"
         )
@@ -277,6 +286,7 @@ class MainWindow(QMainWindow):
         self.device_index.setEnabled(not busy)
         self.settings_group.setEnabled(not busy)
         self.refresh_button.setEnabled(not busy)
+        self.sweep_button.setEnabled(not busy)
         self.apply_button.setEnabled(not busy)
 
     def _start_operation(
@@ -316,6 +326,29 @@ class MainWindow(QMainWindow):
 
     def _operation_finished(self) -> None:
         self._set_busy(False)
+
+    def open_sweep_dialog(self) -> None:
+        """Open the modal, background-operated sweep dialog."""
+
+        if self._busy:
+            return
+
+        dialog = SweepDialog(
+            connection_parameters=(
+                self._connection_parameters()
+            ),
+            initial_frequency_hz=round(
+                self.frequency_input.value()
+                * 1_000_000
+            ),
+            parent=self,
+        )
+
+        dialog.exec()
+
+        # Synchronize the main controls after completion,
+        # restoration, interruption, or manual closure.
+        self.refresh_state()
 
     def refresh_state(self) -> None:
         parameters = self._connection_parameters()

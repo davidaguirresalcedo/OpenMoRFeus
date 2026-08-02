@@ -25,6 +25,7 @@ from .protocol import (
 
 MIN_FREQUENCY_HZ = 85_000_000
 MAX_FREQUENCY_HZ = 5_400_000_000
+FREQUENCY_VERIFICATION_TOLERANCE_HZ = 1
 MIN_MIXER_CURRENT = 0
 MAX_MIXER_CURRENT = 7
 
@@ -89,8 +90,13 @@ class WritableMoRFeusDevice(MoRFeusDevice):
         self,
         function: Function,
         value: int,
+        *,
+        tolerance: int = 0,
     ) -> int:
         """Write a value, consume its acknowledgement, and read it back."""
+
+        if tolerance < 0:
+            raise ValueError("tolerance cannot be negative")
 
         self._write_value(function, value)
 
@@ -99,11 +105,11 @@ class WritableMoRFeusDevice(MoRFeusDevice):
 
         actual = self._get_value(function)
 
-        if actual != value:
+        if abs(actual - value) > tolerance:
             raise VerificationError(
                 f"verification failed for function "
                 f"0x{function:02X}: requested {value}, "
-                f"read back {actual}"
+                f"read back {actual}, tolerance ±{tolerance}"
             )
 
         return actual
@@ -131,6 +137,7 @@ class WritableMoRFeusDevice(MoRFeusDevice):
         return self._set_and_verify(
             Function.FREQUENCY,
             frequency_hz,
+            tolerance=FREQUENCY_VERIFICATION_TOLERANCE_HZ,
         )
 
     def set_frequency_mhz(
