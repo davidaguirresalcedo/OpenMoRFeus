@@ -2,6 +2,30 @@
 
 All notable changes to OpenMoRFeus are documented here.
 
+## 0.2.0 — 2026-08-02
+
+### Added
+
+- Responsive PyQt6 graphical interface.
+- Background hardware operations using the Qt thread pool.
+- Graphical control of frequency, operating mode, mixer current,
+  Bias Tee, and LCD timeout.
+- Automatic state synchronization after opening the GUI.
+- Apply-and-verify workflow using the hardware-validated driver.
+- Optional `gui` installation dependency.
+- `openmorfeus-gui` executable entry point.
+- GUI controller unit tests.
+
+### Hardware validation
+
+- Complete state successfully read from a physical moRFeus.
+- LCD timeout successfully changed, verified, refreshed, and restored.
+- GUI remained responsive during HID transactions.
+
+### Safety
+
+- Historical selectors `0x00` and `0x86` remain unavailable.
+
 ## 0.1.0 — 2026-08-02
 
 Initial hardware-validated release.
