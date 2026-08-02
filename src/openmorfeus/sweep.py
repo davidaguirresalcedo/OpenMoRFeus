@@ -305,10 +305,11 @@ def run_sweep(
                 break
 
             if frequency_hz != current_frequency_hz:
-                device.set_frequency_hz(frequency_hz)
-                current_frequency_hz = frequency_hz
+                current_frequency_hz = (
+                    device.set_frequency_hz(frequency_hz)
+                )
 
-            last_sweep_frequency_hz = frequency_hz
+            last_sweep_frequency_hz = current_frequency_hz
             steps_completed = step_number
 
             if on_progress is not None:
@@ -316,7 +317,7 @@ def run_sweep(
                     SweepProgress(
                         step_number=step_number,
                         total_steps=plan.step_count,
-                        frequency_hz=frequency_hz,
+                        frequency_hz=current_frequency_hz,
                         elapsed_s=clock() - started,
                     )
                 )
