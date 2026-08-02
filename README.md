@@ -3,6 +3,40 @@
 Open implementation and technical documentation for controlling the
 Outernet moRFeus RF generator and frequency mixer through USB HID.
 
+## Installation
+
+Create or activate a Python virtual environment and install the project:
+
+```console
+python3 -m venv .venv
+.venv/bin/python -m pip install -e .
+```
+
+The installed command is:
+
+```console
+.venv/bin/openmorfeus --help
+```
+
+### USB access without root privileges
+
+OpenMoRFeus includes a `udev` rule for the Outernet moRFeus USB HID
+identifiers `10c4:eac9`.
+
+Install it with:
+
+```console
+sudo install -m 0644       packaging/udev/99-openmorfeus.rules       /etc/udev/rules.d/99-openmorfeus.rules
+
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+Disconnect and reconnect the moRFeus after installing the rule.
+
+The device can then be accessed without running the Python application
+as root.
+
 ## Project objectives
 
 - Document the moRFeus USB HID protocol.
@@ -83,4 +117,3 @@ Bare frequency values are interpreted as MHz. Explicit `Hz`,
 
 The historical selectors `0x00` and `0x86` are intentionally not
 exposed.
-
