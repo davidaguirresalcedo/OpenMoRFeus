@@ -117,3 +117,17 @@ Bare frequency values are interpreted as MHz. Explicit `Hz`,
 
 The historical selectors `0x00` and `0x86` are intentionally not
 exposed.
+
+
+## Graphical interface
+
+Install the optional PyQt6 dependency and launch the GUI:
+
+```console
+python -m pip install -e '.[gui]'
+openmorfeus-gui
+```
+
+Hardware transactions run outside the graphical event loop.
+The GUI exposes only the documented controls. Historical
+selectors `0x00` and `0x86` remain unavailable.
