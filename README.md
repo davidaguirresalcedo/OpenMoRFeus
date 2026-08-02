@@ -60,3 +60,27 @@ procedure is established.
 ## License
 
 To be selected before public release.
+
+## Command-line interface
+
+OpenMoRFeus includes a command-line interface for the documented
+moRFeus controls.
+
+```console
+openmorfeus state
+openmorfeus get frequency
+openmorfeus get mode
+
+openmorfeus set frequency 1350MHz
+openmorfeus set mode generator
+openmorfeus set mixer-current 0
+openmorfeus set bias-tee off
+openmorfeus set lcd-timeout always-on
+```
+
+Bare frequency values are interpreted as MHz. Explicit `Hz`,
+`kHz`, `MHz`, and `GHz` units are supported.
+
+The historical selectors `0x00` and `0x86` are intentionally not
+exposed.
+
