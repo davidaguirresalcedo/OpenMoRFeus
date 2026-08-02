@@ -28,3 +28,8 @@ class UnsupportedValueError(DeviceError):
 
 class VerificationError(DeviceError):
     """Raised when read-back does not confirm a written value."""
+
+
+
+class ResponseTimeoutError(DeviceError):
+    """Raised when no matching response arrives before timeout."""

@@ -19,6 +19,7 @@ class FakeTransport:
         self.responses = list(responses)
         self.writes: list[bytes] = []
         self.closed = False
+        self.nonblocking_history: list[int] = []
 
     def write(self, data: Sequence[int]) -> int:
         packet = bytes(data)
@@ -30,6 +31,9 @@ class FakeTransport:
             return bytes()
 
         return self.responses.pop(0)[:size]
+
+    def set_nonblocking(self, nonblocking: int) -> None:
+        self.nonblocking_history.append(nonblocking)
 
     def close(self) -> None:
         self.closed = True

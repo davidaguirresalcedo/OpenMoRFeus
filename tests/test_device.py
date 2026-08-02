@@ -9,7 +9,7 @@ from openmorfeus.device import (
 from openmorfeus.exceptions import (
     DeviceError,
     DeviceResponseError,
-    UnexpectedResponseError,
+    ResponseTimeoutError,
     UnsupportedValueError,
 )
 from openmorfeus.protocol import (
@@ -24,6 +24,7 @@ class FakeTransport:
         self.responses = list(responses)
         self.writes: list[bytes] = []
         self.closed = False
+        self.nonblocking_history: list[int] = []
 
     def write(self, data: Sequence[int]) -> int:
         packet = bytes(data)
@@ -36,6 +37,9 @@ class FakeTransport:
 
         response = self.responses.pop(0)
         return response[:size]
+
+    def set_nonblocking(self, nonblocking: int) -> None:
+        self.nonblocking_history.append(nonblocking)
 
     def close(self) -> None:
         self.closed = True
@@ -145,16 +149,20 @@ class DeviceReadTests(unittest.TestCase):
         ):
             device.get_frequency_hz()
 
-    def test_unexpected_function_is_rejected(self) -> None:
+    def test_unexpected_function_times_out(self) -> None:
         transport = FakeTransport([
             binary_response(
                 Function.BIAS_TEE,
                 0,
             )
         ])
-        device = MoRFeusDevice(transport)
+        device = MoRFeusDevice(
+            transport,
+            response_timeout_s=0.002,
+            poll_interval_s=0.0001,
+        )
 
-        with self.assertRaises(UnexpectedResponseError):
+        with self.assertRaises(ResponseTimeoutError):
             device.get_frequency_hz()
 
     def test_invalid_mixer_current_is_rejected(self) -> None:

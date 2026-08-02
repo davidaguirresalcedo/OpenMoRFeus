@@ -4,25 +4,22 @@ import time
 from numbers import Real
 
 from .device import (
+    DEFAULT_POLL_INTERVAL_S,
+    DEFAULT_RESPONSE_TIMEOUT_S,
     HidTransport,
     LcdTimeout,
     MoRFeusDevice,
     OperatingMode,
-    RESPONSE_SIZE,
 )
 from .exceptions import (
     DeviceError,
-    DeviceResponseError,
-    UnexpectedResponseError,
     VerificationError,
 )
 from .protocol import (
     BinaryResponse,
     Function,
     Opcode,
-    TextResponse,
     build_report,
-    decode_response,
 )
 
 
@@ -46,8 +43,14 @@ class WritableMoRFeusDevice(MoRFeusDevice):
         transport: HidTransport,
         *,
         verification_delay_s: float = 0.05,
+        response_timeout_s: float = DEFAULT_RESPONSE_TIMEOUT_S,
+        poll_interval_s: float = DEFAULT_POLL_INTERVAL_S,
     ):
-        super().__init__(transport)
+        super().__init__(
+            transport,
+            response_timeout_s=response_timeout_s,
+            poll_interval_s=poll_interval_s,
+        )
 
         if verification_delay_s < 0:
             raise ValueError(
@@ -55,8 +58,6 @@ class WritableMoRFeusDevice(MoRFeusDevice):
             )
 
         self._verification_delay_s = verification_delay_s
-
-
     def _write_value(
         self,
         function: Function,
@@ -80,33 +81,10 @@ class WritableMoRFeusDevice(MoRFeusDevice):
                 f"wrote {written}"
             )
 
-        raw = self._transport.read(RESPONSE_SIZE)
-        response = decode_response(raw)
-
-        if isinstance(response, TextResponse):
-            raise DeviceResponseError(response.message)
-
-        if not isinstance(response, BinaryResponse):
-            raise UnexpectedResponseError(
-                "unexpected SET acknowledgement type"
-            )
-
-        if response.opcode != Opcode.SET:
-            raise UnexpectedResponseError(
-                f"expected SET acknowledgement opcode "
-                f"0x{Opcode.SET:02X}, "
-                f"received 0x{response.opcode:02X}"
-            )
-
-        if response.function != function:
-            raise UnexpectedResponseError(
-                f"expected SET acknowledgement for function "
-                f"0x{function:02X}, "
-                f"received 0x{response.function:02X}"
-            )
-
-        return response
-
+        return self._read_expected_response(
+            Opcode.SET,
+            function,
+        )
     def _set_and_verify(
         self,
         function: Function,

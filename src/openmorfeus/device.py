@@ -9,6 +9,7 @@ from .exceptions import (
     DeviceError,
     DeviceNotFoundError,
     DeviceResponseError,
+    ResponseTimeoutError,
     UnexpectedResponseError,
     UnsupportedValueError,
 )
@@ -25,6 +26,8 @@ from .protocol import (
 USB_VENDOR_ID = 0x10C4
 USB_PRODUCT_ID = 0xEAC9
 RESPONSE_SIZE = 16
+DEFAULT_RESPONSE_TIMEOUT_S = 0.50
+DEFAULT_POLL_INTERVAL_S = 0.005
 
 
 class HidTransport(Protocol):
@@ -124,10 +127,23 @@ class DeviceState:
 class MoRFeusDevice:
     """Read-only interface to a physical moRFeus device."""
 
-    def __init__(self, transport: HidTransport):
-        self._transport = transport
-        self._closed = False
+    def __init__(
+        self,
+        transport: HidTransport,
+        *,
+        response_timeout_s: float = DEFAULT_RESPONSE_TIMEOUT_S,
+        poll_interval_s: float = DEFAULT_POLL_INTERVAL_S,
+    ):
+        if response_timeout_s <= 0:
+            raise ValueError("response_timeout_s must be positive")
 
+        if poll_interval_s <= 0:
+            raise ValueError("poll_interval_s must be positive")
+
+        self._transport = transport
+        self._response_timeout_s = response_timeout_s
+        self._poll_interval_s = poll_interval_s
+        self._closed = False
     @classmethod
     def open(
         cls,
@@ -135,6 +151,8 @@ class MoRFeusDevice:
         vendor_id: int = USB_VENDOR_ID,
         product_id: int = USB_PRODUCT_ID,
         index: int = 0,
+        response_timeout_s: float = DEFAULT_RESPONSE_TIMEOUT_S,
+        poll_interval_s: float = DEFAULT_POLL_INTERVAL_S,
     ) -> "MoRFeusDevice":
         """Open a moRFeus through Python hidapi."""
 
@@ -177,8 +195,11 @@ class MoRFeusDevice:
             transport.close()
             raise
 
-        return cls(transport)
-
+        return cls(
+            transport,
+            response_timeout_s=response_timeout_s,
+            poll_interval_s=poll_interval_s,
+        )
     @property
     def closed(self) -> bool:
         return self._closed
@@ -201,6 +222,55 @@ class MoRFeusDevice:
         if self._closed:
             raise DeviceError("device is closed")
 
+    def _read_expected_response(
+        self,
+        opcode: Opcode,
+        function: Function,
+    ) -> BinaryResponse:
+        """Wait for the response matching one opcode and function.
+
+        Binary reports belonging to older or unrelated transactions are
+        discarded until a matching response arrives or the timeout expires.
+        """
+
+        self._ensure_open()
+
+        deadline = time.monotonic() + self._response_timeout_s
+        discarded = 0
+
+        self._transport.set_nonblocking(1)
+
+        try:
+            while time.monotonic() < deadline:
+                raw = self._transport.read(RESPONSE_SIZE)
+
+                if not raw:
+                    time.sleep(self._poll_interval_s)
+                    continue
+
+                response = decode_response(raw)
+
+                if isinstance(response, TextResponse):
+                    raise DeviceResponseError(response.message)
+
+                if (
+                    isinstance(response, BinaryResponse)
+                    and response.opcode == opcode
+                    and response.function == function
+                ):
+                    return response
+
+                discarded += 1
+
+        finally:
+            self._transport.set_nonblocking(0)
+
+        raise ResponseTimeoutError(
+            f"timeout waiting for opcode 0x{opcode:02X}, "
+            f"function 0x{function:02X}; "
+            f"discarded {discarded} unmatched report(s)"
+        )
+
     def _get_value(self, function: Function) -> int:
         """Read one documented function value."""
 
@@ -219,31 +289,12 @@ class MoRFeusDevice:
                 f"short HID write: expected {len(request)}, wrote {written}"
             )
 
-        raw = self._transport.read(RESPONSE_SIZE)
-        response = decode_response(raw)
-
-        if isinstance(response, TextResponse):
-            raise DeviceResponseError(response.message)
-
-        if not isinstance(response, BinaryResponse):
-            raise UnexpectedResponseError(
-                "unexpected response type"
-            )
-
-        if response.opcode != Opcode.GET:
-            raise UnexpectedResponseError(
-                f"expected opcode 0x{Opcode.GET:02X}, "
-                f"received 0x{response.opcode:02X}"
-            )
-
-        if response.function != function:
-            raise UnexpectedResponseError(
-                f"expected function 0x{function:02X}, "
-                f"received 0x{response.function:02X}"
-            )
+        response = self._read_expected_response(
+            Opcode.GET,
+            function,
+        )
 
         return response.value
-
     def get_frequency_hz(self) -> int:
         """Read the configured local-oscillator frequency in hertz."""
 
