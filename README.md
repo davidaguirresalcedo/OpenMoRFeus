@@ -131,3 +131,19 @@ openmorfeus-gui
 Hardware transactions run outside the graphical event loop.
 The GUI exposes only the documented controls. Historical
 selectors `0x00` and `0x86` remain unavailable.
+
+
+### Sweep generator
+
+The graphical interface includes a responsive frequency-sweep
+dialog with:
+
+- validated start, stop, and step frequencies;
+- configurable dwell time;
+- live progress and current-frequency display;
+- pause, resume, and stop control;
+- automatic restoration of the initial frequency.
+
+The sweep runs outside the Qt event thread. Closing the dialog
+during execution requests a controlled stop before the window
+is closed.
