@@ -2,6 +2,16 @@
 
 All notable changes to OpenMoRFeus are documented here.
 
+## 0.3.4 — 2026-08-02
+
+### Changed
+
+* Updated the primary installation instructions to use PyPI.
+* Added separate installation instructions for the CLI, PyQt6 GUI,
+  virtual environments, and editable development installations.
+* Added PyPI version and supported-Python badges to the README.
+* Updated the PyPI long description through the new package release.
+
 ## 0.3.3 — 2026-08-02
 
 ### Added

@@ -2,22 +2,50 @@
 
 [![Tests](https://github.com/davidaguirresalcedo/OpenMoRFeus/actions/workflows/tests.yml/badge.svg)](https://github.com/davidaguirresalcedo/OpenMoRFeus/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/openmorfeus.svg)](https://pypi.org/project/openmorfeus/)
+[![Python versions](https://img.shields.io/pypi/pyversions/openmorfeus.svg)](https://pypi.org/project/openmorfeus/)
 Open implementation and technical documentation for controlling the
 Outernet moRFeus RF generator and frequency mixer through USB HID.
 
 ## Installation
 
-Create or activate a Python virtual environment and install the project:
+OpenMoRFeus requires Python 3.10 or newer.
+
+### Command-line interface
+
+Install the driver and CLI directly from PyPI:
+
+```console
+python3 -m pip install openmorfeus
+openmorfeus --help
+```
+
+### Graphical interface
+
+Install the optional PyQt6 graphical interface:
+
+```console
+python3 -m pip install 'openmorfeus[gui]'
+openmorfeus-gui
+```
+
+Using a Python virtual environment is recommended:
 
 ```console
 python3 -m venv .venv
-.venv/bin/python -m pip install -e .
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install 'openmorfeus[gui]'
 ```
 
-The installed command is:
+### Development installation
+
+Contributors can install the repository in editable mode:
 
 ```console
-.venv/bin/openmorfeus --help
+git clone https://github.com/davidaguirresalcedo/OpenMoRFeus.git
+cd OpenMoRFeus
+python3 -m venv .venv
+.venv/bin/python -m pip install -e '.[gui]'
 ```
 
 ### USB access without root privileges
@@ -130,7 +158,7 @@ exposed.
 Install the optional PyQt6 dependency and launch the GUI:
 
 ```console
-python -m pip install -e '.[gui]'
+python3 -m pip install 'openmorfeus[gui]'
 openmorfeus-gui
 ```
 
