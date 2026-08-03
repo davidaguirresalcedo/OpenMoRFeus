@@ -2,6 +2,19 @@
 
 All notable changes to OpenMoRFeus are documented here.
 
+## 0.3.3 — 2026-08-02
+
+### Added
+
+* Automated publication to PyPI using GitHub Actions.
+* PyPI Trusted Publishing through short-lived OIDC credentials.
+* Automated wheel and source-distribution validation before publication.
+
+### Security
+
+* PyPI publication requires no stored API token or account password.
+* Package building and privileged publication run in separate jobs.
+
 ## 0.3.2 — 2026-08-02
 
 ### Changed

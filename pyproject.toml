@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmorfeus"
-version = "0.3.2"
+version = "0.3.3"
 description = "Open-source Python driver, CLI, PyQt6 GUI, and sweep controller for the Outernet moRFeus"
 readme = "README.md"
 license = "MIT"
