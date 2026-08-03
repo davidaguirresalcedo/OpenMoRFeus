@@ -2,6 +2,40 @@
 
 All notable changes to OpenMoRFeus are documented here.
 
+## 0.3.1 — 2026-08-02
+
+### Added
+
+* MIT license.
+* GitHub Actions continuous-integration workflow for Python 3.10–3.13.
+* Automated syntax checking and execution of the complete unit-test suite.
+
+### Changed
+
+* Package metadata now declares the project license.
+* README now displays test-status and license badges.
+
+## 0.3.0 — 2026-08-02
+
+### Added
+
+* Safe frequency-sweep engine with validated start, stop, step, and dwell parameters.
+* Responsive PyQt6 Sweep Generator dialog.
+* Live sweep progress and verified-frequency reporting.
+* Pause, resume, and controlled stop operations.
+* Automatic restoration of the initial frequency after completion, stop, or error.
+* Unit tests for sweep planning, execution, restoration, GUI imports, and read-back handling.
+
+### Changed
+
+* Frequency verification accepts the observed moRFeus quantization of ±1 Hz.
+* Sweep progress reports the frequency actually confirmed by the device.
+
+### Hardware validation
+
+* Sweep completion, pause, resume, stop, and frequency restoration were tested with a physical moRFeus.
+* The device returned to 1350 MHz after the validation sweeps.
+
 ## 0.2.0 — 2026-08-02
 
 ### Added

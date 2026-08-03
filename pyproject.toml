@@ -1,12 +1,14 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmorfeus"
-version = "0.3.0"
+version = "0.3.1"
 description = "Open-source Python driver and CLI for the Outernet moRFeus"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
     "hidapi>=0.14",

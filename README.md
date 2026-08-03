@@ -1,5 +1,7 @@
 # OpenMoRFeus
 
+[![Tests](https://github.com/davidaguirresalcedo/OpenMoRFeus/actions/workflows/tests.yml/badge.svg)](https://github.com/davidaguirresalcedo/OpenMoRFeus/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 Open implementation and technical documentation for controlling the
 Outernet moRFeus RF generator and frequency mixer through USB HID.
 
@@ -93,7 +95,8 @@ procedure is established.
 
 ## License
 
-To be selected before public release.
+OpenMoRFeus is released under the MIT License. See
+[`LICENSE`](LICENSE) for the complete terms.
 
 ## Command-line interface
 
