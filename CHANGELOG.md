@@ -2,6 +2,18 @@
 
 All notable changes to OpenMoRFeus are documented here.
 
+## 0.3.2 — 2026-08-02
+
+### Changed
+
+* Updated the project status to reflect the completed Python driver,
+  command-line interface, PyQt6 GUI, sweep generator, and continuous
+  integration.
+* Expanded the package description to include the GUI and sweep
+  controller.
+* Clarified that automated hardware-in-the-loop testing remains a
+  future objective.
+
 ## 0.3.1 — 2026-08-02
 
 ### Added

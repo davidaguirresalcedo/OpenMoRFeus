@@ -57,10 +57,13 @@ as root.
 - [x] SET frame format documented.
 - [x] Function selectors 0x81 through 0x85 validated.
 - [x] Textual error response observed.
-- [ ] Modern Python driver.
-- [ ] Command-line interface.
+- [x] Modern Python driver.
+- [x] Command-line interface.
+- [x] Responsive PyQt6 graphical interface.
+- [x] Safe frequency sweep generator with automatic restoration.
+- [x] Automated unit tests and GitHub Actions CI.
 - [ ] Legacy morfeus_tool compatibility layer.
-- [ ] Automated tests with physical hardware.
+- [ ] Automated hardware-in-the-loop tests with a physical moRFeus.
 - [ ] RF laboratory integration.
 
 ## Device identity
